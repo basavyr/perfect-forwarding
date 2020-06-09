@@ -1,0 +1,3878 @@
+<!DOCTYPE html>
+<html dir='ltr' xmlns='http://www.w3.org/1999/xhtml' xmlns:b='http://www.google.com/2005/gml/b' xmlns:data='http://www.google.com/2005/gml/data' xmlns:expr='http://www.google.com/2005/gml/expr'>
+<head>
+<link href='https://www.blogger.com/static/v1/widgets/2549344219-widget_css_bundle.css' rel='stylesheet' type='text/css'/>
+<meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+<meta content='blogger' name='generator'/>
+<link href='https://scottmeyers.blogspot.com/favicon.ico' rel='icon' type='image/x-icon'/>
+<link href='http://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html' rel='canonical'/>
+<link rel="alternate" type="application/atom+xml" title="The View from Aristeia - Atom" href="https://scottmeyers.blogspot.com/feeds/posts/default" />
+<link rel="alternate" type="application/rss+xml" title="The View from Aristeia - RSS" href="https://scottmeyers.blogspot.com/feeds/posts/default?alt=rss" />
+<link rel="service.post" type="application/atom+xml" title="The View from Aristeia - Atom" href="https://www.blogger.com/feeds/7101933101966798446/posts/default" />
+
+<link rel="alternate" type="application/atom+xml" title="The View from Aristeia - Atom" href="https://scottmeyers.blogspot.com/feeds/2894573505263598388/comments/default" />
+<!--Can't find substitution for tag [blog.ieCssRetrofitLinks]-->
+<meta content='http://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html' property='og:url'/>
+<meta content='C++14 Lambdas and Perfect Forwarding' property='og:title'/>
+<meta content='So the joke&#39;s on me, I guess.   In my discussion of std::move  vs. std::forward , I explained that when you call std::forward , the expectat...' property='og:description'/>
+<!--[if IE]> <script> (function() { var html5 = ("abbr,article,aside,audio,canvas,datalist,details," + "figure,footer,header,hgroup,mark,menu,meter,nav,output," + "progress,section,time,video").split(','); for (var i = 0; i < html5.length; i++) { document.createElement(html5[i]); } try { document.execCommand('BackgroundImageCache', false, true); } catch(e) {} })(); </script> <![endif]-->
+<title>The View from Aristeia: C++14 Lambdas and Perfect Forwarding</title>
+<style id='page-skin-1' type='text/css'><!--
+/*
+-----------------------------------------------
+Blogger Template Style
+Name:     Minima Stretch
+Date:     26 Feb 2004
+----------------------------------------------- */
+
+/* Use this with templates/template-twocol.html */
+body {
+background:#ffffff;
+margin:0;
+color:#333333;
+font:x-small Georgia Serif;
+font-size/* */:/**/small;
+font-size: /**/small;
+text-align: center;
+}
+a:link {
+color:#5588aa;
+text-decoration:none;
+}
+a:visited {
+color:#999999;
+text-decoration:none;
+}
+a:hover {
+color:#cc6600;
+text-decoration:underline;
+}
+a img {
+border-width:0;
+}
+/* Header
+-----------------------------------------------
+*/
+#header-wrapper {
+margin:0 2% 10px;
+border:1px solid #cccccc;
+}
+#header {
+margin: 5px;
+border: 1px solid #cccccc;
+text-align: center;
+color:#666666;
+}
+#header-inner {
+background-position: center;
+margin-left: auto;
+margin-right: auto;
+}
+#header h1 {
+margin:5px 5px 0;
+padding:15px 20px .25em;
+line-height:1.2em;
+text-transform:uppercase;
+letter-spacing:.2em;
+font: normal normal 200% Georgia, Serif;
+}
+#header a {
+color:#666666;
+text-decoration:none;
+}
+#header a:hover {
+color:#666666;
+}
+#header .description {
+margin:0 5px 5px;
+padding:0 20px 15px;
+text-transform:uppercase;
+letter-spacing:.2em;
+line-height: 1.4em;
+font: normal normal 78% 'Trebuchet MS', Trebuchet, Arial, Verdana, Sans-serif;
+color: #999999;
+}
+#header img {
+margin-left: auto;
+margin-right: auto;
+}
+/* Outer-Wrapper
+----------------------------------------------- */
+#outer-wrapper {
+margin:0;
+padding:10px;
+text-align:left;
+font: normal normal 100% Georgia, Serif;
+}
+#main-wrapper {
+margin-left: 2%;
+width: 67%;
+float: left;
+display: inline;       /* fix for doubling margin in IE */
+word-wrap: break-word; /* fix for long text breaking sidebar float in IE */
+overflow: hidden;      /* fix for long non-text content breaking IE sidebar float */
+}
+#sidebar-wrapper {
+margin-right: 2%;
+width: 25%;
+float: right;
+display: inline;       /* fix for doubling margin in IE */
+word-wrap: break-word; /* fix for long text breaking sidebar float in IE */
+overflow: hidden;      /* fix for long non-text content breaking IE sidebar float */
+}
+/* Headings
+----------------------------------------------- */
+h2 {
+margin:1.5em 0 .75em;
+font:normal normal 78% 'Trebuchet MS',Trebuchet,Arial,Verdana,Sans-serif;
+line-height: 1.4em;
+text-transform:uppercase;
+letter-spacing:.2em;
+color:#999999;
+}
+/* Posts
+-----------------------------------------------
+*/
+h2.date-header {
+margin:1.5em 0 .5em;
+}
+.post {
+margin:.5em 0 1.5em;
+border-bottom:1px dotted #cccccc;
+padding-bottom:1.5em;
+}
+.post h3 {
+margin:.25em 0 0;
+padding:0 0 4px;
+font-size:140%;
+font-weight:normal;
+line-height:1.4em;
+color:#cc6600;
+}
+.post h3 a, .post h3 a:visited, .post h3 strong {
+display:block;
+text-decoration:none;
+color:#cc6600;
+font-weight:normal;
+}
+.post h3 strong, .post h3 a:hover {
+color:#333333;
+}
+.post-body {
+margin:0 0 .75em;
+line-height:1.6em;
+}
+.post-body blockquote {
+line-height:1.3em;
+}
+.post-footer {
+margin: .75em 0;
+color:#999999;
+text-transform:uppercase;
+letter-spacing:.1em;
+font: normal normal 78% 'Trebuchet MS', Trebuchet, Arial, Verdana, Sans-serif;
+line-height: 1.4em;
+}
+.comment-link {
+margin-left:.6em;
+}
+.post img, table.tr-caption-container {
+padding:4px;
+border:1px solid #cccccc;
+}
+.tr-caption-container img {
+border: none;
+padding: 0;
+}
+.post blockquote {
+margin:1em 20px;
+}
+.post blockquote p {
+margin:.75em 0;
+}
+/* Comments
+----------------------------------------------- */
+#comments h4 {
+margin:1em 0;
+font-weight: bold;
+line-height: 1.4em;
+text-transform:uppercase;
+letter-spacing:.2em;
+color: #999999;
+}
+#comments-block {
+margin:1em 0 1.5em;
+line-height:1.6em;
+}
+#comments-block .comment-author {
+margin:.5em 0;
+}
+#comments-block .comment-body {
+margin:.25em 0 0;
+}
+#comments-block .comment-footer {
+margin:-.25em 0 2em;
+line-height: 1.4em;
+text-transform:uppercase;
+letter-spacing:.1em;
+}
+#comments-block .comment-body p {
+margin:0 0 .75em;
+}
+.deleted-comment {
+font-style:italic;
+color:gray;
+}
+.feed-links {
+clear: both;
+line-height: 2.5em;
+}
+#blog-pager-newer-link {
+float: left;
+}
+#blog-pager-older-link {
+float: right;
+}
+#blog-pager {
+text-align: center;
+}
+/* Sidebar Content
+----------------------------------------------- */
+.sidebar {
+color: #666666;
+line-height: 1.5em;
+}
+.sidebar ul {
+list-style:none;
+margin:0 0 0;
+padding:0 0 0;
+}
+.sidebar li {
+margin:0;
+padding-top:0;
+padding-right:0;
+padding-bottom:.25em;
+padding-left:15px;
+text-indent:-15px;
+line-height:1.5em;
+}
+.sidebar .widget, .main .widget {
+border-bottom:1px dotted #cccccc;
+margin:0 0 1.5em;
+padding:0 0 1.5em;
+}
+.main .Blog {
+border-bottom-width: 0;
+}
+/* Profile
+----------------------------------------------- */
+.profile-img {
+float: left;
+margin-top: 0;
+margin-right: 5px;
+margin-bottom: 5px;
+margin-left: 0;
+padding: 4px;
+border: 1px solid #cccccc;
+}
+.profile-data {
+margin:0;
+text-transform:uppercase;
+letter-spacing:.1em;
+font: normal normal 78% 'Trebuchet MS', Trebuchet, Arial, Verdana, Sans-serif;
+color: #999999;
+font-weight: bold;
+line-height: 1.6em;
+}
+.profile-datablock {
+margin:.5em 0 .5em;
+}
+.profile-textblock {
+margin: 0.5em 0;
+line-height: 1.6em;
+}
+.profile-link {
+font: normal normal 78% 'Trebuchet MS', Trebuchet, Arial, Verdana, Sans-serif;
+text-transform: uppercase;
+letter-spacing: .1em;
+}
+/* Footer
+----------------------------------------------- */
+#footer {
+width:660px;
+clear:both;
+margin:0 auto;
+padding-top:15px;
+line-height: 1.6em;
+text-transform:uppercase;
+letter-spacing:.1em;
+text-align: center;
+}
+
+--></style>
+<!-- Syntax Highlighter Additions START -->
+<link href="//alexgorbatchev.com/pub/sh/current/styles/shCore.css" rel="stylesheet" type="text/css">
+<link href="//alexgorbatchev.com/pub/sh/current/styles/shThemeEclipse.css" rel="stylesheet" type="text/css">
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shCore.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushAS3.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushBash.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushColdFusion.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushCSharp.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushCpp.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushCss.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushDelphi.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushDiff.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushErlang.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushGroovy.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushJScript.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushJava.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushJavaFX.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushPerl.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushPhp.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushPlain.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushPowerShell.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushPython.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushRuby.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushScala.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushSql.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushVb.js" type="text/javascript"></script>
+<script src="//alexgorbatchev.com/pub/sh/current/scripts/shBrushXml.js" type="text/javascript"></script>
+<script language='javascript' type='text/javascript'>
+ SyntaxHighlighter.config.bloggerMode = true;
+SyntaxHighlighter.defaults['gutter'] = false;
+ SyntaxHighlighter.all();
+</script>
+<!-- Syntax Highlighter Additions END -->
+<!-- Google Code Prettifier Additions START -->
+<link href="//google-code-prettify.googlecode.com/svn/trunk/src/prettify.css" rel="stylesheet" type="text/css">
+<script src="//google-code-prettify.googlecode.com/svn/trunk/src/prettify.js" type="text/javascript"></script>
+<!-- Google Code Prettifier Additions END -->
+<link href='https://www.blogger.com/dyn-css/authorization.css?targetBlogID=7101933101966798446&amp;zx=7622c9f5-eca9-4b50-a876-de21c234ce03' media='none' onload='if(media!=&#39;all&#39;)media=&#39;all&#39;' rel='stylesheet'/><noscript><link href='https://www.blogger.com/dyn-css/authorization.css?targetBlogID=7101933101966798446&amp;zx=7622c9f5-eca9-4b50-a876-de21c234ce03' rel='stylesheet'/></noscript>
+
+<script type="text/javascript" language="javascript">
+  // Supply ads personalization default for EEA readers
+  // See https://www.blogger.com/go/adspersonalization
+  adsbygoogle = window.adsbygoogle || [];
+  if (typeof adsbygoogle.requestNonPersonalizedAds === 'undefined') {
+    adsbygoogle.requestNonPersonalizedAds = 1;
+  }
+</script>
+
+
+</head>
+<body onload='prettyPrint()'>
+<div class='navbar section' id='navbar'><div class='widget Navbar' data-version='1' id='Navbar1'><script type="text/javascript">
+    function setAttributeOnload(object, attribute, val) {
+      if(window.addEventListener) {
+        window.addEventListener('load',
+          function(){ object[attribute] = val; }, false);
+      } else {
+        window.attachEvent('onload', function(){ object[attribute] = val; });
+      }
+    }
+  </script>
+<div id="navbar-iframe-container"></div>
+<script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script>
+<script type="text/javascript">
+      gapi.load("gapi.iframes:gapi.iframes.style.bubble", function() {
+        if (gapi.iframes && gapi.iframes.getContext) {
+          gapi.iframes.getContext().openChild({
+              url: 'https://www.blogger.com/navbar.g?targetBlogID\x3d7101933101966798446\x26blogName\x3dThe+View+from+Aristeia\x26publishMode\x3dPUBLISH_MODE_BLOGSPOT\x26navbarType\x3dBLUE\x26layoutType\x3dLAYOUTS\x26searchRoot\x3dhttps://scottmeyers.blogspot.com/search\x26blogLocale\x3den\x26v\x3d2\x26homepageUrl\x3dhttps://scottmeyers.blogspot.com/\x26targetPostID\x3d2894573505263598388\x26blogPostOrPageUrl\x3dhttps://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html\x26vt\x3d-6354270042502829878',
+              where: document.getElementById("navbar-iframe-container"),
+              id: "navbar-iframe"
+          });
+        }
+      });
+    </script><script type="text/javascript">
+(function() {
+var script = document.createElement('script');
+script.type = 'text/javascript';
+script.src = '//pagead2.googlesyndication.com/pagead/js/google_top_exp.js';
+var head = document.getElementsByTagName('head')[0];
+if (head) {
+head.appendChild(script);
+}})();
+</script>
+</div></div>
+<div id='outer-wrapper'><div id='wrap2'>
+<!-- skip links for text browsers -->
+<span id='skiplinks' style='display:none;'>
+<a href='#main'>skip to main </a> |
+      <a href='#sidebar'>skip to sidebar</a>
+</span>
+<div id='header-wrapper'>
+<div class='header section' id='header'><div class='widget Header' data-version='1' id='Header1'>
+<div id='header-inner'>
+<div class='titlewrapper'>
+<h1 class='title'>
+<a href='https://scottmeyers.blogspot.com/'>
+The View from Aristeia
+</a>
+</h1>
+</div>
+<div class='descriptionwrapper'>
+<p class='description'><span>Scott Meyers' Activities and Interests</span></p>
+</div>
+</div>
+</div></div>
+</div>
+<div id='content-wrapper'>
+<div id='crosscol-wrapper' style='text-align:center'>
+<div class='crosscol no-items section' id='crosscol'></div>
+</div>
+<div id='main-wrapper'>
+<div class='main section' id='main'><div class='widget Blog' data-version='1' id='Blog1'>
+<div class='blog-posts hfeed'>
+
+          <div class="date-outer">
+        
+<h2 class='date-header'><span>Monday, May 6, 2013</span></h2>
+
+          <div class="date-posts">
+        
+<div class='post-outer'>
+<div class='post hentry uncustomized-post-template' itemprop='blogPost' itemscope='itemscope' itemtype='http://schema.org/BlogPosting'>
+<meta content='7101933101966798446' itemprop='blogId'/>
+<meta content='2894573505263598388' itemprop='postId'/>
+<a name='2894573505263598388'></a>
+<h3 class='post-title entry-title' itemprop='name'>
+C++14 Lambdas and Perfect Forwarding
+</h3>
+<div class='post-header'>
+<div class='post-header-line-1'></div>
+</div>
+<div class='post-body entry-content' id='post-body-2894573505263598388' itemprop='description articleBody'>
+So the joke's on me, I guess.<br />
+<br />
+In <a href="http://scottmeyers.blogspot.com/2012/11/on-superfluousness-of-stdmove.html">my discussion of <code>std::move</code> vs. <code>std::forward</code></a>, I explained that when you call <code>std::forward</code>, the expectation is that you'll pass a type consistent with the rules for template type deduction, meaning (1) an lvalue reference type for lvalues and (2) a non-reference type for rvalues.&nbsp; I added,<br />
+<blockquote class="tr_bq">
+If you decide to be a smart aleck and write [code passing an rvalue reference type], the reference-collapsing rules will see that you get the same behavior as [you would passing a non-reference type]<code></code>, but with any luck, your team lead will shift you to development in 
+straight C, where you'll have to content yourself with writing bizarre macros.</blockquote>
+Well.&nbsp; As I said, the joke seems to be on me, because the standardization commitee&nbsp; apparently consists largely of smart alecks.<br />
+<br />
+Let me explain.<br />
+<br />
+The <a href="http://isocpp.org/blog/2013/04/trip-report-iso-c-spring-2013-meeting">recently-adopted C++14 CD</a> includes beefy additions to lambda capabilities, including the support for polymorphic lambdas that Herb Sutter can't help but <a href="http://open-std.org/jtc1/sc22/wg21/docs/papers/2012/n3418.pdf">mention</a> I've been whining about for years. This means that in C++14, we now have the expressive power that the <a href="http://www.boost.org/users/history/version_1_28_0.html">Boost Lambda library has been offering since 2002</a>. Ahem. But C++14 goes further, supporting also variadic lambdas, generalized captures (including capture-by-move), and, of particular relevance to this post, support for perfect forwarding.<br />
+<br />
+Suppose we want to write a C++14 lambda that takes a parameter and perfect-forwards it to some function <code>f</code>:<br />
+<pre class="brush: c++">auto forwardingLambda = [](auto&amp;&amp; param) { /* perfect-forward param to f */ };
+</pre>
+Writing the perfect-forwarding call is easy, but it's probably not obvious how.&nbsp; The normal way to perfect-forward something it to use <code>std::forward</code>, so we'd expect to write essentially this: <br />
+<pre class="brush: c++">auto forwardingLambda = [](auto&amp;&amp; param) { f(std::forward&lt;T&gt;(param)); };
+</pre>
+But, uh oh, there's no <code>T</code> to pass to <code>std::forward</code>.&nbsp; (In the class generated from the lambda expression, there is, but inside the lambda itself, there's no type for <code>param</code>.)&nbsp; So what do we pass to <code>std::forward</code>? We can hardly pass <code>auto</code>. (Consider what would happen if we had a lambda taking multiple parameters, each of type <code>auto</code> and each of which we wanted to forward. In that case, each <code>std::forward&lt;auto&gt;</code> would be ambiguous: which <code>auto</code> should <code>std::forward</code> use?)<br />
+<br />
+The solution takes advantage of two observations. First, the type-deduction rules for <code>auto</code> in lambdas are the same as for templates. This means that if an lvalue argument is passed to the lambda, <code>param</code>'s type will be an lvalue reference--exactly what we need for <code>std::forward</code>. If an rvalue argument is passed, its type will be an rvalue reference. For such parameters, we can recover the type to pass to <code>std::forward</code> by stripping it of its reference-ness. We could thus write <code>forwardingLambda</code> like this:<br />
+<pre class="brush: c++">auto forwardingLambda = [](auto&amp;&amp; param) {
+  f(std::forward&lt;std::conditional&lt;std::is_rvalue_reference&lt;decltype(param)&gt;::value,
+                                  std::remove_reference&lt;decltype(param)&gt;::type,
+                                  decltype(param)&gt;::type&gt;(param));
+};
+
+</pre>
+At least I think we could. I don't have a C++14 compiler to try it with, and, anyway, it's too gross to waste time on. It would be sad, indeed, if this is what the standardization committee expected us to do to effect perfect forwarding inside its spiffy new C++14 lambdas. Fortunately, it doesn't.
+<br />
+<br />
+Which brings us to observation number two. As I noted near the beginning of this post,<br />
+<blockquote class="tr_bq">
+If you decide to be a smart aleck and write [code passing an rvalue reference type to std::forward], the reference-collapsing rules will see that you get the same behavior as [you would passing a non-reference type]<code></code>.</blockquote>
+That means that if <code>param</code>'s type is an rvalue reference, there is no need to strip off its reference-ocity. Instead, you can smart aleck your way to success by simply passing that type directly to <code>std::forward</code>.&nbsp; Like so: <br />
+<pre class="brush: c++">auto forwardingLambda = [](auto&amp;&amp; param) { f(std::forward&lt;decltype(param)&gt;(param)); };
+</pre>
+Frankly, this is more verbose than I'd prefer. One could imagine a world where you could say something like this:<br />
+<pre class="brush: c++">auto forwardingLambda =
+  [](&lt;T1&gt;&amp;&amp; param1, &lt;T2&gt;&amp;&amp; param2) { f(std::forward&lt;T1&gt;(param1), std::forward&lt;T2&gt;(param2)); };
+</pre>
+But that's not the world we live in, and given that C++14 gives us polymorphic lambdas, variadic lambdas, and move-enabled lambdas, I'm not going to complain about the world of C++14 lambdas.&nbsp; Except possibly to Herb :-) <br />
+<br />
+Scott
+<div style='clear: both;'></div>
+</div>
+<div class='post-footer'>
+<div class='post-footer-line post-footer-line-1'>
+<span class='post-author vcard'>
+Posted by
+<span class='fn' itemprop='author' itemscope='itemscope' itemtype='http://schema.org/Person'>
+<meta content='https://www.blogger.com/profile/05280964633768289328' itemprop='url'/>
+<a class='g-profile' href='https://www.blogger.com/profile/05280964633768289328' rel='author' title='author profile'>
+<span itemprop='name'>Scott Meyers</span>
+</a>
+</span>
+</span>
+<span class='post-timestamp'>
+at
+<meta content='http://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html' itemprop='url'/>
+<a class='timestamp-link' href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html' rel='bookmark' title='permanent link'><abbr class='published' itemprop='datePublished' title='2013-05-06T20:55:00-07:00'>8:55 PM</abbr></a>
+</span>
+<span class='reaction-buttons'>
+</span>
+<span class='post-comment-link'>
+</span>
+<span class='post-backlinks post-comment-link'>
+</span>
+<span class='post-icons'>
+<span class='item-action'>
+<a href='https://www.blogger.com/email-post.g?blogID=7101933101966798446&postID=2894573505263598388' title='Email Post'>
+<img alt='' class='icon-action' height='13' src='https://resources.blogblog.com/img/icon18_email.gif' width='18'/>
+</a>
+</span>
+<span class='item-control blog-admin pid-1600182865'>
+<a href='https://www.blogger.com/post-edit.g?blogID=7101933101966798446&postID=2894573505263598388&from=pencil' title='Edit Post'>
+<img alt='' class='icon-action' height='18' src='https://resources.blogblog.com/img/icon18_edit_allbkg.gif' width='18'/>
+</a>
+</span>
+</span>
+<div class='post-share-buttons goog-inline-block'>
+</div>
+</div>
+<div class='post-footer-line post-footer-line-2'>
+<span class='post-labels'>
+</span>
+</div>
+<div class='post-footer-line post-footer-line-3'>
+<span class='post-location'>
+</span>
+</div>
+</div>
+</div>
+<div class='comments' id='comments'>
+<a name='comments'></a>
+<h4>19 comments:</h4>
+<div id='Blog1_comments-block-wrapper'>
+<dl class='avatar-comment-indent' id='comments-block'>
+<dt class='comment-author ' id='c8077881184542077977'>
+<a name='c8077881184542077977'></a>
+<div class="avatar-image-container avatar-stock"><span dir="ltr"><a href="https://www.blogger.com/profile/13217172115386951012" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-8077881184542077977-13217172115386951012"><img src="//lh3.googleusercontent.com/zFdxGE77vvD2w5xHy6jkVuElKv-U9_9qLkRYK8OnbDeJPtjSZ82UPq5w6hJ-SA=s35" width="35" height="35" alt="" title="Unknown">
+
+</a></span></div>
+<a href='https://www.blogger.com/profile/13217172115386951012' rel='nofollow'>Unknown</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-8077881184542077977'>
+<p>
+Thanks for an interesting post. +1 for the importance of the subject.<br /><br />Regarding:<br />[](&lt;T1&gt; param1, &lt;T2&gt; param2) { f(std::forward&lt;T1&gt;(param1), std::forward&lt;T2&gt;(param2)); };<br />Wouldn&#39;t one option be to allow:<br />template&lt;class T1, class T2&gt;[](T1 param1, T2 param2) { f(std::forward&lt;T1&gt;(param1), std::forward&lt;T2&gt;(param2)); };<br />While that is more verbose, it is also more in line with regular template code.<br /><br />I find one of the problems with C++ to be that there are just too many language tricks and quirks, and adding the syntax &quot;&lt;T1&gt; param1&quot; would create yet another one. On the other hand, it is kind of neat...<br /><br />Also, is there some plan of adding the same functionality for regular functions, e.g. to allow int f(auto x){return x;} ?<br /><br />PS. The parenthesis in the code utilising is_rvalue_reference needs reviewing. DS.
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1367914651830#c8077881184542077977' title='comment permalink'>
+May 7, 2013 at 1:17 AM
+</a>
+<span class='item-control blog-admin pid-400976455'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=8077881184542077977' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author ' id='c6336499416530236947'>
+<a name='c6336499416530236947'></a>
+<div class="avatar-image-container avatar-stock"><span dir="ltr"><a href="https://www.blogger.com/profile/00585754106557615292" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-6336499416530236947-00585754106557615292"><img src="//lh3.googleusercontent.com/zFdxGE77vvD2w5xHy6jkVuElKv-U9_9qLkRYK8OnbDeJPtjSZ82UPq5w6hJ-SA=s35" width="35" height="35" alt="" title="mmocny">
+
+</a></span></div>
+<a href='https://www.blogger.com/profile/00585754106557615292' rel='nofollow'>mmocny</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-6336499416530236947'>
+<p>
+This form of perfect forwarding is inconsistent with my expectations.  I would have expected:<br /><br />[](auto&amp;&amp; param) { std::forward(param); } // notice the auto&amp;&amp;<br /><br />I would have expected param to need to be a universal reference.<br /><br />I&#39;ll have to read the proposal for exactly how lambda auto parameters deduce type, but I expected a trivial 1:1 lowering to template(T ?? param) where ?? is the cv and reference types provided.
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1367938403794#c6336499416530236947' title='comment permalink'>
+May 7, 2013 at 7:53 AM
+</a>
+<span class='item-control blog-admin pid-1299040226'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=6336499416530236947' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author blog-author' id='c3674130368560602538'>
+<a name='c3674130368560602538'></a>
+<div class="avatar-image-container vcard"><span dir="ltr"><a href="https://www.blogger.com/profile/05280964633768289328" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-3674130368560602538-05280964633768289328"><img src="https://resources.blogblog.com/img/blank.gif" width="35" height="35" class="delayLoad" style="display: none;" longdesc="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" alt="" title="Scott Meyers">
+
+<noscript><img src="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" width="35" height="35" class="photo" alt=""></noscript></a></span></div>
+<a href='https://www.blogger.com/profile/05280964633768289328' rel='nofollow'>Scott Meyers</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-3674130368560602538'>
+<p>
+@mmocny: Your expectation regarding the need for &quot;&amp;&amp;&quot; after &quot;auto&quot; is correct, I simply forgot to put it in.  I&#39;ve updated the post to correct this. Your expectation about a 1:1 mapping from &quot;auto&quot; in a lambda to a type parameter in the underlying implementation is also correct. Full details are available in N3649, the <a href="http://isocpp.org/files/papers/N3649.html" rel="nofollow">proposal that was adopted</a>.
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1367943329445#c3674130368560602538' title='comment permalink'>
+May 7, 2013 at 9:15 AM
+</a>
+<span class='item-control blog-admin pid-1600182865'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=3674130368560602538' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author blog-author' id='c5533984260602957242'>
+<a name='c5533984260602957242'></a>
+<div class="avatar-image-container vcard"><span dir="ltr"><a href="https://www.blogger.com/profile/05280964633768289328" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-5533984260602957242-05280964633768289328"><img src="https://resources.blogblog.com/img/blank.gif" width="35" height="35" class="delayLoad" style="display: none;" longdesc="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" alt="" title="Scott Meyers">
+
+<noscript><img src="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" width="35" height="35" class="photo" alt=""></noscript></a></span></div>
+<a href='https://www.blogger.com/profile/05280964633768289328' rel='nofollow'>Scott Meyers</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-5533984260602957242'>
+<p>
+@Anders Sjögren: As far as I know, there are no plans to offer &quot;auto&quot; parameters for non-template functions.  Such functions would effectively be templates, anyway.  <br /><br />Thanks for pointing out the parenthesis problem with my use of std::is_rvalue_reference. I&#39;ve fixed it now (I hope!).
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1367943527374#c5533984260602957242' title='comment permalink'>
+May 7, 2013 at 9:18 AM
+</a>
+<span class='item-control blog-admin pid-1600182865'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=5533984260602957242' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author ' id='c6104655368970016839'>
+<a name='c6104655368970016839'></a>
+<div class="avatar-image-container avatar-stock"><span dir="ltr"><a href="https://www.blogger.com/profile/13217172115386951012" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-6104655368970016839-13217172115386951012"><img src="//lh3.googleusercontent.com/zFdxGE77vvD2w5xHy6jkVuElKv-U9_9qLkRYK8OnbDeJPtjSZ82UPq5w6hJ-SA=s35" width="35" height="35" alt="" title="Unknown">
+
+</a></span></div>
+<a href='https://www.blogger.com/profile/13217172115386951012' rel='nofollow'>Unknown</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-6104655368970016839'>
+<p>
+@Scott: Thanks for the clarification. <br />I guess a reason for allowing auto in regular function definitions would have been brevity, and consistency in syntax when defining different callable artifacts. <br />It seems one or more of the holes mended by c++14 have to do with lack of completeness and consistency between functions and lambdas, e.g. in the case of return type deduction, and with why-can&#39;t-I:s, like multiple returns in return type deductions. In general I guess the language gets easier to learn and to read if the same coding style is allowed and used in similar situations, and that it just feels more coherent and complete. It seems like a good thing to have less rules where you have to know in what specific circumstances you may use one form of syntax or another. <br />It feels like lambdas ideally would be equivalent in syntax to a regular function definition, expect that one starts with [] and the other with auto function_name, but that the rest of the definition rules should be identical (including a starting template&lt;...&gt; block). <br />Just my 5c, being fairly ignorant of all the devils lurking in the details.
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1367952590764#c6104655368970016839' title='comment permalink'>
+May 7, 2013 at 11:49 AM
+</a>
+<span class='item-control blog-admin pid-400976455'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=6104655368970016839' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author ' id='c529999168230030182'>
+<a name='c529999168230030182'></a>
+<div class="avatar-image-container avatar-stock"><span dir="ltr"><img src="//resources.blogblog.com/img/blank.gif" width="35" height="35" alt="" title="Zenju">
+
+</span></div>
+Zenju
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-529999168230030182'>
+<p>
+&gt; f(std::forward(param));<br /><br />I&#39;m surprised decltype can extract l/r-valueness. Wasn&#39;t the &quot;rule&quot; that a parameter is always an l-value in the body of a function?<br />Or does one have to distinguish between l/r-valueness of type and expression?<br />I&#39;m probably overlooking some subtleness here, but: if l/r-valueness is part of the type, why does std::forward require a template argument and not deduce it from the parameter type?<br />I thought I understood l/r-valueness until seeing &quot;decltype&lt; param &gt;&quot;(param)...
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1368009184172#c529999168230030182' title='comment permalink'>
+May 8, 2013 at 3:33 AM
+</a>
+<span class='item-control blog-admin pid-1648322295'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=529999168230030182' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author ' id='c4516287538378800906'>
+<a name='c4516287538378800906'></a>
+<div class="avatar-image-container avatar-stock"><span dir="ltr"><a href="https://www.blogger.com/profile/13217172115386951012" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-4516287538378800906-13217172115386951012"><img src="//lh3.googleusercontent.com/zFdxGE77vvD2w5xHy6jkVuElKv-U9_9qLkRYK8OnbDeJPtjSZ82UPq5w6hJ-SA=s35" width="35" height="35" alt="" title="Unknown">
+
+</a></span></div>
+<a href='https://www.blogger.com/profile/13217172115386951012' rel='nofollow'>Unknown</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-4516287538378800906'>
+<p>
+@Zenju: http://en.cppreference.com/w/cpp/language/decltype will tell you how decltype(entity) differs from decltype(expression). Thus decltype(x) != decltype((x)) in many cases.<br /><br />The following code highlights the behaviour in the case of template parameters and functions taking universal references ( http://isocpp.org/blog/2012/11/universal-references-in-c11-scott-meyers ):<br /><br />enum class ref_type {none, lvalue, rvalue};<br />template&lt;class T&gt;<br />struct determine_ref_type<br />{<br />    constexpr static ref_type value = std::is_rvalue_reference&lt;T&gt;::value ? ref_type::rvalue : (std::is_lvalue_reference&lt;T&gt;::value ? ref_type::lvalue : ref_type::none);<br />};<br /><br />template&lt;ref_type expected_decltype_ref_type, class T&gt;<br />void assert_correct_reference_types(T&amp;&amp; x)<br />{<br />    constexpr ref_type decltype_ref_type = determine_ref_type&lt;decltype(x)&gt;::value;<br />    constexpr ref_type decltype_expr_ref_type = determine_ref_type&lt;decltype((x))&gt;::value;<br />    static_assert(expected_decltype_ref_type == decltype_ref_type,&quot;decltype of argument is of same type as passed in value&quot;);<br />    static_assert(decltype_expr_ref_type == ref_type::lvalue,&quot;decltype of expr is l-value ref&quot;);<br />}<br /><br />void test_it()<br />{<br />    int x = 1;<br />    assert_correct_reference_types&lt;ref_type::rvalue&gt;(std::move(x));<br />    assert_correct_reference_types&lt;ref_type::rvalue&gt;(1);<br />    assert_correct_reference_types&lt;ref_type::lvalue&gt;(x);<br />}
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1368023008777#c4516287538378800906' title='comment permalink'>
+May 8, 2013 at 7:23 AM
+</a>
+<span class='item-control blog-admin pid-400976455'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=4516287538378800906' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author blog-author' id='c6014510505202729273'>
+<a name='c6014510505202729273'></a>
+<div class="avatar-image-container vcard"><span dir="ltr"><a href="https://www.blogger.com/profile/05280964633768289328" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-6014510505202729273-05280964633768289328"><img src="https://resources.blogblog.com/img/blank.gif" width="35" height="35" class="delayLoad" style="display: none;" longdesc="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" alt="" title="Scott Meyers">
+
+<noscript><img src="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" width="35" height="35" class="photo" alt=""></noscript></a></span></div>
+<a href='https://www.blogger.com/profile/05280964633768289328' rel='nofollow'>Scott Meyers</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-6014510505202729273'>
+<p>
+@Zenju: decltype can detect whether an expression is an lvalue or an rvalue, but in its use with std::forward in lambdas, that&#39;s not what it&#39;s doing. Parameters are always lvalues. What decltype is doing in that case is returning the type of the parameter, which, because it&#39;s declared to be of type auto&amp;&amp; (i.e., a universal reference), will always be either an lvalue reference or an rvalue reference. This means that std::forward receives either an lvalue reference type or an rvalue reference type. Due to the rules for reference collapsing, std::forward&#39;s behavior when passed an rvalue reference type is the same as when it&#39;s passed a non-reference type, and passing a non-reference type to std::forward is the convention for indicating that the parameter to which std::forward is applied should be treated as an rvalue. The explanation is somewhat confusing, because the underlying mechanics are complicated, but the end result is that std::forward&lt;decltype(param)&gt;(param) does what it&#39;s supposed to: casts param to an rvalue only if the argument passed to param was an rvalue.
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1368031476117#c6014510505202729273' title='comment permalink'>
+May 8, 2013 at 9:44 AM
+</a>
+<span class='item-control blog-admin pid-1600182865'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=6014510505202729273' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author ' id='c5567740097113333920'>
+<a name='c5567740097113333920'></a>
+<div class="avatar-image-container avatar-stock"><span dir="ltr"><a href="https://www.blogger.com/profile/00585754106557615292" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-5567740097113333920-00585754106557615292"><img src="//lh3.googleusercontent.com/zFdxGE77vvD2w5xHy6jkVuElKv-U9_9qLkRYK8OnbDeJPtjSZ82UPq5w6hJ-SA=s35" width="35" height="35" alt="" title="mmocny">
+
+</a></span></div>
+<a href='https://www.blogger.com/profile/00585754106557615292' rel='nofollow'>mmocny</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-5567740097113333920'>
+<p>
+@scott @zenju I was curious if this decltype behaviour is specific to lambda (which would have been suprising), but it thankfully is not.  I have a test case working with existing compilers using normal function templates such that decltype(param) with forward works as scott explains here.<br /><br />Now I wonder if that means a FORWARD(param) macro can be written, and if it would work for all cases..
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1368046836094#c5567740097113333920' title='comment permalink'>
+May 8, 2013 at 2:00 PM
+</a>
+<span class='item-control blog-admin pid-1299040226'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=5567740097113333920' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author blog-author' id='c3333089516914825138'>
+<a name='c3333089516914825138'></a>
+<div class="avatar-image-container vcard"><span dir="ltr"><a href="https://www.blogger.com/profile/05280964633768289328" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-3333089516914825138-05280964633768289328"><img src="https://resources.blogblog.com/img/blank.gif" width="35" height="35" class="delayLoad" style="display: none;" longdesc="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" alt="" title="Scott Meyers">
+
+<noscript><img src="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" width="35" height="35" class="photo" alt=""></noscript></a></span></div>
+<a href='https://www.blogger.com/profile/05280964633768289328' rel='nofollow'>Scott Meyers</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-3333089516914825138'>
+<p>
+@mmocny: There is nothing special about decltype (or anything else) inside a lambda expression, so a FORWARD macro such as you suggest could be written, and I can&#39;t think of any reason it would not work in all &quot;normal&quot; cases.  Whether it would work in absolutely all cases, I&#39;m not sure. The rules for type deduction used by decltype are not identical to the rules for type deduction used by function templates, so there might be some edge cases where FORWARD would not yield the behavior you&#39;d expect. Or there might not be :-)
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1368050676331#c3333089516914825138' title='comment permalink'>
+May 8, 2013 at 3:04 PM
+</a>
+<span class='item-control blog-admin pid-1600182865'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=3333089516914825138' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author ' id='c6068857028951615937'>
+<a name='c6068857028951615937'></a>
+<div class="avatar-image-container avatar-stock"><span dir="ltr"><img src="//resources.blogblog.com/img/blank.gif" width="35" height="35" alt="" title="Zenju">
+
+</span></div>
+Zenju
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-6068857028951615937'>
+<p>
+@Anders: <br />&gt; decltype(x) != decltype((x)) in many cases.<br /><br />Thanks, this was exactly what was not clear enough to me!<br /><br />@Scott: Thanks for the &quot;walkthrough&quot;. Each step makes sense, yet it&#39;s sometimes hard to see the bigger picture. Maybe it&#39;s because l/r-valueness is not visible in the source code but has to be deduced by rules, that makes it a difficult concept. I guess it&#39;s this and the fact that it&#39;s context dependent unlike the &quot;plain types&quot; one is used to prior to C++11.
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1368093555970#c6068857028951615937' title='comment permalink'>
+May 9, 2013 at 2:59 AM
+</a>
+<span class='item-control blog-admin pid-1648322295'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=6068857028951615937' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author ' id='c526754234005119047'>
+<a name='c526754234005119047'></a>
+<div class="avatar-image-container avatar-stock"><span dir="ltr"><a href="https://www.blogger.com/profile/08706626287523825695" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-526754234005119047-08706626287523825695"><img src="//lh3.googleusercontent.com/zFdxGE77vvD2w5xHy6jkVuElKv-U9_9qLkRYK8OnbDeJPtjSZ82UPq5w6hJ-SA=s35" width="35" height="35" alt="" title="Mark Garcia">
+
+</a></span></div>
+<a href='https://www.blogger.com/profile/08706626287523825695' rel='nofollow'>Mark Garcia</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-526754234005119047'>
+<p>
+Nice and interesting post. Good thing there&#39;s decltype to provide a work-around to facilitate those new C++14 lambda features. I wonder what additional syntax for lambdas would the standard committee create (if they decide to do so).<br /><br />BTW, I just noticed a (possible) typo:<br /><br />...<br />We could thus write forwardingLambda like this:<br /><br />auto forwardingLambda = [](auto&amp;&amp; param) {<br />  f(std::forward::value,<br />                                  std::remove_reference::type&gt;(param));<br />};<br /><br />That&#39;s 4 &lt; and 3 &gt;, if I still have my right eyesight ;-).
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1371530098982#c526754234005119047' title='comment permalink'>
+June 17, 2013 at 9:34 PM
+</a>
+<span class='item-control blog-admin pid-1045115790'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=526754234005119047' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author blog-author' id='c4566821041156449630'>
+<a name='c4566821041156449630'></a>
+<div class="avatar-image-container vcard"><span dir="ltr"><a href="https://www.blogger.com/profile/05280964633768289328" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-4566821041156449630-05280964633768289328"><img src="https://resources.blogblog.com/img/blank.gif" width="35" height="35" class="delayLoad" style="display: none;" longdesc="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" alt="" title="Scott Meyers">
+
+<noscript><img src="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" width="35" height="35" class="photo" alt=""></noscript></a></span></div>
+<a href='https://www.blogger.com/profile/05280964633768289328' rel='nofollow'>Scott Meyers</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-4566821041156449630'>
+<p>
+@Mark:  Nice catch on the unbalanced angle brackets.  I believe I&#39;ve balanced them now, but I&#39;m sure somebody will let me know if I&#39;m mistaken!
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1371790008388#c4566821041156449630' title='comment permalink'>
+June 20, 2013 at 9:46 PM
+</a>
+<span class='item-control blog-admin pid-1600182865'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=4566821041156449630' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author ' id='c5530137585398324124'>
+<a name='c5530137585398324124'></a>
+<div class="avatar-image-container vcard"><span dir="ltr"><a href="https://www.blogger.com/profile/11957855386259543653" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-5530137585398324124-11957855386259543653"><img src="https://resources.blogblog.com/img/blank.gif" width="35" height="35" class="delayLoad" style="display: none;" longdesc="//2.bp.blogspot.com/-huD9NMQ0u3o/XMXNb_s37xI/AAAAAAAAHLc/33ug4VR1c_0AfVZJqDpIhE2OpozazTw7ACK4BGAYYCw/s35/sumant-ocean-round.png" alt="" title="Sumant">
+
+<noscript><img src="//2.bp.blogspot.com/-huD9NMQ0u3o/XMXNb_s37xI/AAAAAAAAHLc/33ug4VR1c_0AfVZJqDpIhE2OpozazTw7ACK4BGAYYCw/s35/sumant-ocean-round.png" width="35" height="35" class="photo" alt=""></noscript></a></span></div>
+<a href='https://www.blogger.com/profile/11957855386259543653' rel='nofollow'>Sumant</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-5530137585398324124'>
+<p>
+@scott Yes, those are great features to have but for completeness and to step up to the true generic power of named functors, we still need partially specialized lambdas. For instance,<br /><br />[](std::vector param1) { ... } 
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1383155179797#c5530137585398324124' title='comment permalink'>
+October 30, 2013 at 10:46 AM
+</a>
+<span class='item-control blog-admin pid-566844237'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=5530137585398324124' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author ' id='c4209544599679248917'>
+<a name='c4209544599679248917'></a>
+<div class="avatar-image-container vcard"><span dir="ltr"><a href="https://www.blogger.com/profile/11957855386259543653" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-4209544599679248917-11957855386259543653"><img src="https://resources.blogblog.com/img/blank.gif" width="35" height="35" class="delayLoad" style="display: none;" longdesc="//2.bp.blogspot.com/-huD9NMQ0u3o/XMXNb_s37xI/AAAAAAAAHLc/33ug4VR1c_0AfVZJqDpIhE2OpozazTw7ACK4BGAYYCw/s35/sumant-ocean-round.png" alt="" title="Sumant">
+
+<noscript><img src="//2.bp.blogspot.com/-huD9NMQ0u3o/XMXNb_s37xI/AAAAAAAAHLc/33ug4VR1c_0AfVZJqDpIhE2OpozazTw7ACK4BGAYYCw/s35/sumant-ocean-round.png" width="35" height="35" class="photo" alt=""></noscript></a></span></div>
+<a href='https://www.blogger.com/profile/11957855386259543653' rel='nofollow'>Sumant</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-4209544599679248917'>
+<p>
+hmm, so blogger did not like my angle brackets. Here it is again, if anyone cares: [](std::vector&lt;class T, class Alloc&gt; &amp; param1) { ... }
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1383179967756#c4209544599679248917' title='comment permalink'>
+October 30, 2013 at 5:39 PM
+</a>
+<span class='item-control blog-admin pid-566844237'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=4209544599679248917' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author ' id='c7813586710486487649'>
+<a name='c7813586710486487649'></a>
+<div class="avatar-image-container avatar-stock"><span dir="ltr"><a href="https://www.blogger.com/profile/18039743514879473826" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-7813586710486487649-18039743514879473826"><img src="//lh3.googleusercontent.com/zFdxGE77vvD2w5xHy6jkVuElKv-U9_9qLkRYK8OnbDeJPtjSZ82UPq5w6hJ-SA=s35" width="35" height="35" alt="" title="Adam Butcher">
+
+</a></span></div>
+<a href='https://www.blogger.com/profile/18039743514879473826' rel='nofollow'>Adam Butcher</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-7813586710486487649'>
+<p>
+FWIW, GCC 4.9 supports the following syntax (proposed in <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3560.pdf" rel="nofollow">N3560: Assorted Extensions to Lambda Expressions</a>) which alleviates the forwarding problem (amongst others):<br /><br />[] &lt;typename T&gt; (T t) {}<br /><br />E.g. Wrap a move-only function in a shared-ptr for storage in a std::function:<br /><br />   template &lt;typename F, typename... A&gt;<br />   auto make_shared_callable(A&amp;&amp;... a)<br />   {<br />      return [pfn = std::make_shared&lt;F&gt;(std::forward&lt;A&gt;(a)...)]<br />         &lt;typename... B&gt; (B&amp;&amp;... b) { return (*pfn)(std::forward&lt;B&gt;(b)...); };<br />   }
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1387267266168#c7813586710486487649' title='comment permalink'>
+December 17, 2013 at 12:01 AM
+</a>
+<span class='item-control blog-admin pid-1572919872'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=7813586710486487649' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author blog-author' id='c733943956632921719'>
+<a name='c733943956632921719'></a>
+<div class="avatar-image-container vcard"><span dir="ltr"><a href="https://www.blogger.com/profile/05280964633768289328" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-733943956632921719-05280964633768289328"><img src="https://resources.blogblog.com/img/blank.gif" width="35" height="35" class="delayLoad" style="display: none;" longdesc="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" alt="" title="Scott Meyers">
+
+<noscript><img src="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" width="35" height="35" class="photo" alt=""></noscript></a></span></div>
+<a href='https://www.blogger.com/profile/05280964633768289328' rel='nofollow'>Scott Meyers</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-733943956632921719'>
+<p>
+@Adam Butcher: My understanding is that the only part of N3560 that was adopted was the provision for variadic parameters, so gcc&#39;s support for &quot;&lt;typename T&gt;&quot; is a nonstandard extension.<br /><br />Thanks for bringing this to my attention.
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1387311010399#c733943956632921719' title='comment permalink'>
+December 17, 2013 at 12:10 PM
+</a>
+<span class='item-control blog-admin pid-1600182865'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=733943956632921719' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author ' id='c7716084062772287102'>
+<a name='c7716084062772287102'></a>
+<div class="avatar-image-container avatar-stock"><span dir="ltr"><a href="https://www.blogger.com/profile/18039743514879473826" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-7716084062772287102-18039743514879473826"><img src="//lh3.googleusercontent.com/zFdxGE77vvD2w5xHy6jkVuElKv-U9_9qLkRYK8OnbDeJPtjSZ82UPq5w6hJ-SA=s35" width="35" height="35" alt="" title="Adam Butcher">
+
+</a></span></div>
+<a href='https://www.blogger.com/profile/18039743514879473826' rel='nofollow'>Adam Butcher</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-7716084062772287102'>
+<p>
+Yes that is my understanding also.  Disappointing, but we have to accept the committee decisions I guess.<br /><br />The &#39;familiar&#39; template syntax seemed like a natural thing to me when I first made the <a href="http://gcc.gnu.org/ml/gcc/2009-08/msg00174.html" rel="nofollow">original lambda branch patch</a> back in 2009.  When I got some free time in July this year and began the implementation proper in GCC 4.9, the explicit syntax was the first thing I did as it allowed to implement generic lambdas without implicit function templates (i.e. without handling &#39;auto&#39; type parameters).<br /><br />Incidentally, as well as the explicit template syntax extension, GCC 4.9 also supports implicit function templates through the use of &#39;auto&#39; parameters in &#39;normal&#39; function declarations.  E.g.<br /><br />  auto add(auto a, auto b)<br />  {<br />     return a + b;<br />  }<br /><br />is accepted.  My intention was to provide a route toward the terse syntax of concepts lite but I haven&#39;t had the time to try it out on that branch yet.  I see no reason to prohibit the intuitive example above when it can be arrived at more obtusely with standard C++14 as:<br /><br />  auto add = [] (auto a, auto b)<br />  {<br />     return a + b;<br />  };<br /><br />Sorry for the digression into implicit function templates but it was mentioned earlier in the comments above.<br /><br />I just hope that the Concepts Lite TS will provide C++ with a clean regular syntax for these things such that it is easier to teach and learn.
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1387317342108#c7716084062772287102' title='comment permalink'>
+December 17, 2013 at 1:55 PM
+</a>
+<span class='item-control blog-admin pid-1572919872'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=7716084062772287102' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+<dt class='comment-author blog-author' id='c6637775565338175820'>
+<a name='c6637775565338175820'></a>
+<div class="avatar-image-container vcard"><span dir="ltr"><a href="https://www.blogger.com/profile/05280964633768289328" target="" rel="nofollow" onclick="" class="avatar-hovercard" id="av-6637775565338175820-05280964633768289328"><img src="https://resources.blogblog.com/img/blank.gif" width="35" height="35" class="delayLoad" style="display: none;" longdesc="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" alt="" title="Scott Meyers">
+
+<noscript><img src="//2.bp.blogspot.com/-Nzfg4Fi8mQU/V0SlFizZY0I/AAAAAAAABIw/MuFMRiICKCUy3WyGIvbxh_Xhwu6AD1E4gCK4B/s35/sdm-small.jpg" width="35" height="35" class="photo" alt=""></noscript></a></span></div>
+<a href='https://www.blogger.com/profile/05280964633768289328' rel='nofollow'>Scott Meyers</a>
+said...
+</dt>
+<dd class='comment-body' id='Blog1_cmt-6637775565338175820'>
+<p>
+@Adam Butcher: Thanks for this additional information. I had not considered the equivalence of your two versions of add, but it&#39;s certainly interesting.
+</p>
+</dd>
+<dd class='comment-footer'>
+<span class='comment-timestamp'>
+<a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html?showComment=1387322239141#c6637775565338175820' title='comment permalink'>
+December 17, 2013 at 3:17 PM
+</a>
+<span class='item-control blog-admin pid-1600182865'>
+<a class='comment-delete' href='https://www.blogger.com/delete-comment.g?blogID=7101933101966798446&postID=6637775565338175820' title='Delete Comment'>
+<img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+</a>
+</span>
+</span>
+</dd>
+</dl>
+</div>
+<p class='comment-footer'>
+<a href='https://www.blogger.com/comment.g?blogID=7101933101966798446&postID=2894573505263598388' onclick=''>Post a Comment</a>
+</p>
+<div id='backlinks-container'>
+<div id='Blog1_backlinks-container'>
+</div>
+</div>
+</div>
+</div>
+
+        </div></div>
+      
+</div>
+<div class='blog-pager' id='blog-pager'>
+<span id='blog-pager-newer-link'>
+<a class='blog-pager-newer-link' href='https://scottmeyers.blogspot.com/2013/05/lambdas-vs-closures.html' id='Blog1_blog-pager-newer-link' title='Newer Post'>Newer Post</a>
+</span>
+<span id='blog-pager-older-link'>
+<a class='blog-pager-older-link' href='https://scottmeyers.blogspot.com/2013/05/shared-states-from-stdasync-remain.html' id='Blog1_blog-pager-older-link' title='Older Post'>Older Post</a>
+</span>
+<a class='home-link' href='https://scottmeyers.blogspot.com/'>Home</a>
+</div>
+<div class='clear'></div>
+<div class='post-feeds'>
+<div class='feed-links'>
+Subscribe to:
+<a class='feed-link' href='https://scottmeyers.blogspot.com/feeds/2894573505263598388/comments/default' target='_blank' type='application/atom+xml'>Post Comments (Atom)</a>
+</div>
+</div>
+</div></div>
+</div>
+<div id='sidebar-wrapper'>
+<div class='sidebar section' id='sidebar'><div class='widget Profile' data-version='1' id='Profile1'>
+<h2>About Me</h2>
+<div class='widget-content'>
+<a href='https://www.blogger.com/profile/05280964633768289328'><img alt='My photo' class='profile-img' height='80' src='//3.bp.blogspot.com/_YMc9zPJlncw/S33UIUUqQGI/AAAAAAAAADg/IthdyZwO5_Q/S220-s80/sdm-small.jpg' width='60'/></a>
+<dl class='profile-datablock'>
+<dt class='profile-data'>
+<a class='profile-name-link g-profile' href='https://www.blogger.com/profile/05280964633768289328' rel='author' style='background-image: url(//www.blogger.com/img/logo-16.png);'>
+Scott Meyers
+</a>
+</dt>
+<dd class='profile-textblock'>Scott Meyers is a retired expert on the C++ programming language. He wrote several notable books (e.g., <a href="http://www.amazon.com/gp/product/0321334876?ie=UTF8&amp;tag=aristeia.com-20&amp;linkCode=as2&amp;camp=1789&amp;creative=9325&amp;creativeASIN=0321334876"><em>Effective C++</em></a>), and he delivered training and consulting services to clients worldwide.</dd>
+</dl>
+<a class='profile-link' href='https://www.blogger.com/profile/05280964633768289328' rel='author'>View my complete profile</a>
+<div class='clear'></div>
+<span class='widget-item-control'>
+<span class='item-control blog-admin'>
+<a class='quickedit' href='//www.blogger.com/rearrange?blogID=7101933101966798446&widgetType=Profile&widgetId=Profile1&action=editWidget&sectionId=sidebar' onclick='return _WidgetManager._PopupConfig(document.getElementById("Profile1"));' rel='nofollow' target='configProfile1' title='Edit'>
+<img alt='' height='18' src='https://resources.blogblog.com/img/icon18_wrench_allbkg.png' width='18'/>
+</a>
+</span>
+</span>
+<div class='clear'></div>
+</div>
+</div><div class='widget BlogArchive' data-version='1' id='BlogArchive1'>
+<h2>Blog Archive</h2>
+<div class='widget-content'>
+<div id='ArchiveList'>
+<div id='BlogArchive1_ArchiveList'>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2019/'>
+2019
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2019/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2019/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2018/'>
+2018
+</a>
+<span class='post-count' dir='ltr'>(6)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2018/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2018/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2018/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2017/'>
+2017
+</a>
+<span class='post-count' dir='ltr'>(7)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2017/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2017/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2017/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2017/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2017/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2017/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2017/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2016/'>
+2016
+</a>
+<span class='post-count' dir='ltr'>(11)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2016/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2016/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2016/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2016/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2016/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2016/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/'>
+2015
+</a>
+<span class='post-count' dir='ltr'>(29)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2015/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2014/'>
+2014
+</a>
+<span class='post-count' dir='ltr'>(32)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2014/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2014/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2014/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2014/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2014/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2014/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2014/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2014/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2014/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(5)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2014/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate expanded'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy toggle-open'>
+
+        &#9660;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2013/'>
+2013
+</a>
+<span class='post-count' dir='ltr'>(30)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2013/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2013/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2013/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2013/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2013/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate expanded'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy toggle-open'>
+
+        &#9660;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2013/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+<ul class='posts'>
+<li><a href='https://scottmeyers.blogspot.com/2013/05/effective-c1114-programming-in-oslo-and.html'>&quot;Effective C++11/14 Programming&quot; in Oslo and Londo...</a></li>
+<li><a href='https://scottmeyers.blogspot.com/2013/05/lambdas-vs-closures.html'>Lambdas vs. Closures</a></li>
+<li><a href='https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html'>C++14 Lambdas and Perfect Forwarding</a></li>
+<li><a href='https://scottmeyers.blogspot.com/2013/05/shared-states-from-stdasync-remain.html'>Shared State from std::async remains special</a></li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2013/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2013/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2013/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2013/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(5)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/'>
+2012
+</a>
+<span class='post-count' dir='ltr'>(35)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(10)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2012/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(5)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2011/'>
+2011
+</a>
+<span class='post-count' dir='ltr'>(23)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2011/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2011/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2011/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2011/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2011/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2011/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2011/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2011/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2011/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(7)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2011/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2010/'>
+2010
+</a>
+<span class='post-count' dir='ltr'>(14)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2010/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2010/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2010/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2010/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2010/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(5)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2010/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2009/'>
+2009
+</a>
+<span class='post-count' dir='ltr'>(10)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2009/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2009/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2009/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2009/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2009/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2009/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2009/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2009/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2009/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2008/'>
+2008
+</a>
+<span class='post-count' dir='ltr'>(7)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2008/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2008/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2008/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2008/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2008/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2008/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2007/'>
+2007
+</a>
+<span class='post-count' dir='ltr'>(10)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2007/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2007/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2007/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2007/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2007/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2007/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2007/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2006/'>
+2006
+</a>
+<span class='post-count' dir='ltr'>(14)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2006/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2006/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2006/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2006/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(6)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2006/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2006/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2005/'>
+2005
+</a>
+<span class='post-count' dir='ltr'>(15)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2005/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2005/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2005/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2005/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2005/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2005/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2005/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2005/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2005/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2004/'>
+2004
+</a>
+<span class='post-count' dir='ltr'>(17)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2004/11/'>
+November
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2004/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2004/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2004/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2004/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2004/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2004/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2004/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2003/'>
+2003
+</a>
+<span class='post-count' dir='ltr'>(16)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2003/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2003/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2003/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2003/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2003/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2003/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2003/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2003/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2002/'>
+2002
+</a>
+<span class='post-count' dir='ltr'>(16)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2002/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2002/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2002/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2002/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2002/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2002/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2002/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2002/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(4)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2002/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2002/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2001/'>
+2001
+</a>
+<span class='post-count' dir='ltr'>(21)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2001/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2001/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2001/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(3)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2001/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2001/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2001/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(5)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2001/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(5)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2001/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2001/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2000/'>
+2000
+</a>
+<span class='post-count' dir='ltr'>(13)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2000/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2000/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2000/08/'>
+August
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2000/07/'>
+July
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2000/06/'>
+June
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2000/05/'>
+May
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2000/04/'>
+April
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2000/03/'>
+March
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2000/02/'>
+February
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/2000/01/'>
+January
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/1999/'>
+1999
+</a>
+<span class='post-count' dir='ltr'>(5)</span>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/1999/12/'>
+December
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/1999/10/'>
+October
+</a>
+<span class='post-count' dir='ltr'>(1)</span>
+</li>
+</ul>
+<ul class='hierarchy'>
+<li class='archivedate collapsed'>
+<a class='toggle' href='javascript:void(0)'>
+<span class='zippy'>
+
+        &#9658;&#160;
+      
+</span>
+</a>
+<a class='post-count-link' href='https://scottmeyers.blogspot.com/1999/09/'>
+September
+</a>
+<span class='post-count' dir='ltr'>(2)</span>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class='clear'></div>
+<span class='widget-item-control'>
+<span class='item-control blog-admin'>
+<a class='quickedit' href='//www.blogger.com/rearrange?blogID=7101933101966798446&widgetType=BlogArchive&widgetId=BlogArchive1&action=editWidget&sectionId=sidebar' onclick='return _WidgetManager._PopupConfig(document.getElementById("BlogArchive1"));' rel='nofollow' target='configBlogArchive1' title='Edit'>
+<img alt='' height='18' src='https://resources.blogblog.com/img/icon18_wrench_allbkg.png' width='18'/>
+</a>
+</span>
+</span>
+<div class='clear'></div>
+</div>
+</div></div>
+</div>
+<!-- spacer for skins that want sidebar and main to be the same height-->
+<div class='clear'>&#160;</div>
+</div>
+<!-- end content-wrapper -->
+<div id='footer-wrapper'>
+<div class='footer no-items section' id='footer'></div>
+</div>
+</div></div>
+<!-- end outer-wrapper -->
+<script src='https://apis.google.com/js/plusone.js' type='text/javascript'></script>
+<!--V\u0103 revine responsabilitatea de a v\u0103 informa vizitatorii \xeen privin\u021ba cookie-urilor folosite \u0219i a datelor colectate pe blogul dvs. \xcen acest scop, Blogger creeaz\u0103 o notificare standard pe care o pute\u021bi personaliza sau o pute\u021bi \xeenlocui cu propria notificare. Consulta\u021bi http://www.blogger.com/go/cookiechoices pentru mai multe detalii.-->
+<script defer='' src='/js/cookienotice.js'></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function(event) {
+      window.cookieChoices && cookieChoices.showCookieConsentBar && cookieChoices.showCookieConsentBar(
+          (window.cookieOptions && cookieOptions.msg) || 'Acest site folose\u0219te cookie-uri de la Google pentru livrarea serviciilor \u0219i analizarea traficului. Adresa dvs. IP \u0219i programul user agent sunt trimise c\u0103tre Google \xeempreun\u0103 cu valorile privind performan\u021ba \u0219i securitatea pentru asigurarea calit\u0103\u021bii serviciului, generarea statisticilor de utilizare, detectarea \u0219i remedierea abuzurilor.',
+          (window.cookieOptions && cookieOptions.close) || 'Ok',
+          (window.cookieOptions && cookieOptions.learn) || 'Afla\u021bi mai multe',
+          (window.cookieOptions && cookieOptions.link) || 'https://www.blogger.com/go/blogspot-cookies');
+    });
+  </script>
+
+<script type="text/javascript" src="https://www.blogger.com/static/v1/widgets/1357278742-widgets.js"></script>
+<script type='text/javascript'>
+window['__wavt'] = 'AOuZoY53HiED0TF_9KCRLe3WzDcoNQPr5A:1591712996566';_WidgetManager._Init('//www.blogger.com/rearrange?blogID\x3d7101933101966798446','//scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html','7101933101966798446');
+_WidgetManager._SetDataContext([{'name': 'blog', 'data': {'blogId': '7101933101966798446', 'title': 'The View from Aristeia', 'url': 'https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html', 'canonicalUrl': 'http://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html', 'homepageUrl': 'https://scottmeyers.blogspot.com/', 'searchUrl': 'https://scottmeyers.blogspot.com/search', 'canonicalHomepageUrl': 'http://scottmeyers.blogspot.com/', 'blogspotFaviconUrl': 'https://scottmeyers.blogspot.com/favicon.ico', 'bloggerUrl': 'https://www.blogger.com', 'hasCustomDomain': false, 'httpsEnabled': true, 'enabledCommentProfileImages': true, 'gPlusViewType': 'FILTERED_POSTMOD', 'adultContent': false, 'analyticsAccountNumber': '', 'encoding': 'UTF-8', 'locale': 'en', 'localeUnderscoreDelimited': 'en', 'languageDirection': 'ltr', 'isPrivate': false, 'isMobile': false, 'isMobileRequest': false, 'mobileClass': '', 'isPrivateBlog': false, 'feedLinks': '\x3clink rel\x3d\x22alternate\x22 type\x3d\x22application/atom+xml\x22 title\x3d\x22The View from Aristeia - Atom\x22 href\x3d\x22https://scottmeyers.blogspot.com/feeds/posts/default\x22 /\x3e\n\x3clink rel\x3d\x22alternate\x22 type\x3d\x22application/rss+xml\x22 title\x3d\x22The View from Aristeia - RSS\x22 href\x3d\x22https://scottmeyers.blogspot.com/feeds/posts/default?alt\x3drss\x22 /\x3e\n\x3clink rel\x3d\x22service.post\x22 type\x3d\x22application/atom+xml\x22 title\x3d\x22The View from Aristeia - Atom\x22 href\x3d\x22https://www.blogger.com/feeds/7101933101966798446/posts/default\x22 /\x3e\n\n\x3clink rel\x3d\x22alternate\x22 type\x3d\x22application/atom+xml\x22 title\x3d\x22The View from Aristeia - Atom\x22 href\x3d\x22https://scottmeyers.blogspot.com/feeds/2894573505263598388/comments/default\x22 /\x3e\n', 'meTag': '', 'adsenseHostId': 'ca-host-pub-1556223355139109', 'adsenseHasAds': false, 'view': '', 'dynamicViewsCommentsSrc': '//www.blogblog.com/dynamicviews/4224c15c4e7c9321/js/comments.js', 'dynamicViewsScriptSrc': '//www.blogblog.com/dynamicviews/17f04ed39adab521', 'plusOneApiSrc': 'https://apis.google.com/js/plusone.js', 'disableGComments': true, 'sharing': {'platforms': [{'name': 'Get link', 'key': 'link', 'shareMessage': 'Get link', 'target': ''}, {'name': 'Facebook', 'key': 'facebook', 'shareMessage': 'Share to Facebook', 'target': 'facebook'}, {'name': 'BlogThis!', 'key': 'blogThis', 'shareMessage': 'BlogThis!', 'target': 'blog'}, {'name': 'Twitter', 'key': 'twitter', 'shareMessage': 'Share to Twitter', 'target': 'twitter'}, {'name': 'Pinterest', 'key': 'pinterest', 'shareMessage': 'Share to Pinterest', 'target': 'pinterest'}, {'name': 'Email', 'key': 'email', 'shareMessage': 'Email', 'target': 'email'}], 'disableGooglePlus': true, 'googlePlusShareButtonWidth': 300, 'googlePlusBootstrap': '\x3cscript type\x3d\x22text/javascript\x22\x3ewindow.___gcfg \x3d {\x27lang\x27: \x27en\x27};\x3c/script\x3e'}, 'hasCustomJumpLinkMessage': false, 'jumpLinkMessage': 'Read more', 'pageType': 'item', 'postId': '2894573505263598388', 'pageName': 'C++14 Lambdas and Perfect Forwarding', 'pageTitle': 'The View from Aristeia: C++14 Lambdas and Perfect Forwarding'}}, {'name': 'features', 'data': {'sharing_get_link_dialog': 'true', 'sharing_native': 'false'}}, {'name': 'messages', 'data': {'edit': 'Edit', 'linkCopiedToClipboard': 'Link copied to clipboard!', 'ok': 'Ok', 'postLink': 'Post Link'}}, {'name': 'template', 'data': {'name': 'custom', 'localizedName': 'Custom', 'isResponsive': false, 'isAlternateRendering': false, 'isCustom': true}}, {'name': 'view', 'data': {'classic': {'name': 'classic', 'url': '?view\x3dclassic'}, 'flipcard': {'name': 'flipcard', 'url': '?view\x3dflipcard'}, 'magazine': {'name': 'magazine', 'url': '?view\x3dmagazine'}, 'mosaic': {'name': 'mosaic', 'url': '?view\x3dmosaic'}, 'sidebar': {'name': 'sidebar', 'url': '?view\x3dsidebar'}, 'snapshot': {'name': 'snapshot', 'url': '?view\x3dsnapshot'}, 'timeslide': {'name': 'timeslide', 'url': '?view\x3dtimeslide'}, 'isMobile': false, 'title': 'C++14 Lambdas and Perfect Forwarding', 'description': 'So the joke\x27s on me, I guess.   In my discussion of std::move  vs. std::forward , I explained that when you call std::forward , the expectat...', 'url': 'https://scottmeyers.blogspot.com/2013/05/c14-lambdas-and-perfect-forwarding.html', 'type': 'item', 'isSingleItem': true, 'isMultipleItems': false, 'isError': false, 'isPage': false, 'isPost': true, 'isHomepage': false, 'isArchive': false, 'isLabelSearch': false, 'postId': 2894573505263598388}}]);
+_WidgetManager._RegisterWidget('_NavbarView', new _WidgetInfo('Navbar1', 'navbar', document.getElementById('Navbar1'), {}, 'displayModeFull'));
+_WidgetManager._RegisterWidget('_HeaderView', new _WidgetInfo('Header1', 'header', document.getElementById('Header1'), {}, 'displayModeFull'));
+_WidgetManager._RegisterWidget('_BlogView', new _WidgetInfo('Blog1', 'main', document.getElementById('Blog1'), {'cmtInteractionsEnabled': false, 'lightboxEnabled': true, 'lightboxModuleUrl': 'https://www.blogger.com/static/v1/jsbin/1835849736-lbx.js', 'lightboxCssUrl': 'https://www.blogger.com/static/v1/v-css/368954415-lightbox_bundle.css'}, 'displayModeFull'));
+_WidgetManager._RegisterWidget('_ProfileView', new _WidgetInfo('Profile1', 'sidebar', document.getElementById('Profile1'), {}, 'displayModeFull'));
+_WidgetManager._RegisterWidget('_BlogArchiveView', new _WidgetInfo('BlogArchive1', 'sidebar', document.getElementById('BlogArchive1'), {'languageDirection': 'ltr', 'loadingMessage': 'Loading\x26hellip;'}, 'displayModeFull'));
+</script>
+</body>
+</html>
